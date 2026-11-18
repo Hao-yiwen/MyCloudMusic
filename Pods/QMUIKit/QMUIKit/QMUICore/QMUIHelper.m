@@ -20,11 +20,11 @@
 #import "NSString+QMUI.h"
 #import "UIInterface+QMUI.h"
 #import "NSObject+QMUI.h"
+#import "NSArray+QMUI.h"
 #import <AVFoundation/AVFoundation.h>
 #import <math.h>
 #import <sys/utsname.h>
 
-const CGPoint QMUIBadgeInvalidateOffset = {-1000, -1000};
 NSString *const kQMUIResourcesBundleName = @"QMUIResources";
 
 @interface _QMUIPortraitViewController : UIViewController
@@ -243,10 +243,15 @@ static CGFloat pixelOne = -1.0f;
         return [NSString stringWithFormat:@"%s", getenv("SIMULATOR_MODEL_IDENTIFIER")];
     }
     
-    // See https://www.theiphonewiki.com/wiki/Models for identifiers
-    struct utsname systemInfo;
-    uname(&systemInfo);
-    return [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+    // See https://gist.github.com/adamawolf/3048717 for identifiers
+    static dispatch_once_t onceToken;
+    static NSString *model;
+    dispatch_once(&onceToken, ^{
+        struct utsname systemInfo;
+        uname(&systemInfo);
+        model = [NSString stringWithCString:systemInfo.machine encoding:NSUTF8StringEncoding];
+    });
+    return model;
 }
 
 + (NSString *)deviceName {
@@ -260,7 +265,7 @@ static CGFloat pixelOne = -1.0f;
         }
         
         NSDictionary *dict = @{
-            // See https://www.theiphonewiki.com/wiki/Models
+            // See https://gist.github.com/adamawolf/3048717
             @"iPhone1,1" : @"iPhone 1G",
             @"iPhone1,2" : @"iPhone 3G",
             @"iPhone2,1" : @"iPhone 3GS",
@@ -309,6 +314,14 @@ static CGFloat pixelOne = -1.0f;
             @"iPhone14,8" : @"iPhone 14 Plus",
             @"iPhone15,2" : @"iPhone 14 Pro",
             @"iPhone15,3" : @"iPhone 14 Pro Max",
+            @"iPhone15,4" : @"iPhone 15",
+            @"iPhone15,5" : @"iPhone 15 Plus",
+            @"iPhone16,1" : @"iPhone 15 Pro",
+            @"iPhone16,2" : @"iPhone 15 Pro Max",
+            @"iPhone17,1" : @"iPhone 16 Pro",
+            @"iPhone17,2" : @"iPhone 16 Pro Max",
+            @"iPhone17,3" : @"iPhone 16",
+            @"iPhone17,4" : @"iPhone 16 Plus",
             
             @"iPad1,1" : @"iPad 1",
             @"iPad2,1" : @"iPad 2 (WiFi)",
@@ -381,6 +394,18 @@ static CGFloat pixelOne = -1.0f;
             @"iPad13,11" : @"iPad Pro (12.9 inch, 5th generation)",
             @"iPad14,1" : @"iPad mini (6th generation)",
             @"iPad14,2" : @"iPad mini (6th generation)",
+            @"iPad14,3" : @"iPad Pro 11 inch 4th Gen",
+            @"iPad14,4" : @"iPad Pro 11 inch 4th Gen",
+            @"iPad14,5" : @"iPad Pro 12.9 inch 6th Gen",
+            @"iPad14,6" : @"iPad Pro 12.9 inch 6th Gen",
+            @"iPad14,8" : @"iPad Air 6th Gen",
+            @"iPad14,9" : @"iPad Air 6th Gen",
+            @"iPad14,10" : @"iPad Air 7th Gen",
+            @"iPad14,11" : @"iPad Air 7th Gen",
+            @"iPad16,3" : @"iPad Pro 11 inch 5th Gen",
+            @"iPad16,4" : @"iPad Pro 11 inch 5th Gen",
+            @"iPad16,5" : @"iPad Pro 12.9 inch 7th Gen",
+            @"iPad16,6" : @"iPad Pro 12.9 inch 7th Gen",
             
             @"iPod1,1" : @"iPod touch 1",
             @"iPod2,1" : @"iPod touch 2",
@@ -419,6 +444,24 @@ static CGFloat pixelOne = -1.0f;
             @"Watch6,2"  : @"Apple Watch Series 6 44mm",
             @"Watch6,3"  : @"Apple Watch Series 6 40mm",
             @"Watch6,4"  : @"Apple Watch Series 6 44mm",
+            @"Watch6,6" : @"Apple Watch Series 7 41mm case (GPS)",
+            @"Watch6,7" : @"Apple Watch Series 7 45mm case (GPS)",
+            @"Watch6,8" : @"Apple Watch Series 7 41mm case (GPS+Cellular)",
+            @"Watch6,9" : @"Apple Watch Series 7 45mm case (GPS+Cellular)",
+            @"Watch6,10" : @"Apple Watch SE 40mm case (GPS)",
+            @"Watch6,11" : @"Apple Watch SE 44mm case (GPS)",
+            @"Watch6,12" : @"Apple Watch SE 40mm case (GPS+Cellular)",
+            @"Watch6,13" : @"Apple Watch SE 44mm case (GPS+Cellular)",
+            @"Watch6,14" : @"Apple Watch Series 8 41mm case (GPS)",
+            @"Watch6,15" : @"Apple Watch Series 8 45mm case (GPS)",
+            @"Watch6,16" : @"Apple Watch Series 8 41mm case (GPS+Cellular)",
+            @"Watch6,17" : @"Apple Watch Series 8 45mm case (GPS+Cellular)",
+            @"Watch6,18" : @"Apple Watch Ultra",
+            @"Watch7,1" : @"Apple Watch Series 9 41mm case (GPS)",
+            @"Watch7,2" : @"Apple Watch Series 9 45mm case (GPS)",
+            @"Watch7,3" : @"Apple Watch Series 9 41mm case (GPS+Cellular)",
+            @"Watch7,4" : @"Apple Watch Series 9 45mm case (GPS+Cellular)",
+            @"Watch7,5" : @"Apple Watch Ultra 2",
             
             @"AudioAccessory1,1" : @"HomePod",
             @"AudioAccessory1,2" : @"HomePod",
@@ -445,7 +488,7 @@ static NSInteger isIPad = -1;
 + (BOOL)isIPad {
     if (isIPad < 0) {
         // [[[UIDevice currentDevice] model] isEqualToString:@"iPad"] 无法判断模拟器 iPad，所以改为以下方式
-        isIPad = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad ? 1 : 0;
+        isIPad = UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad ? 1 : 0;
     }
     return isIPad > 0;
 }
@@ -521,7 +564,24 @@ static NSInteger isNotchedScreen = -1;
 }
 
 + (BOOL)isRegularScreen {
+    if ([@[
+        @"iPhone 14 Pro",
+        @"iPhone 15",
+        @"iPhone 16",
+    ] qmui_firstMatchWithBlock:^BOOL(NSString *item) {
+        return [QMUIHelper.deviceName hasPrefix:item];
+    }]) {
+        return YES;
+    }
     return [self isIPad] || (!IS_ZOOMEDMODE && ([self is67InchScreenAndiPhone14Later] || [self is67InchScreen] || [self is65InchScreen] || [self is61InchScreen] || [self is55InchScreen]));
+}
+
+static NSInteger is69InchScreen = -1;
++ (BOOL)is69InchScreen {
+    if (is69InchScreen < 0) {
+        is69InchScreen = CGSizeEqualToSize(CGSizeMake(DEVICE_WIDTH, DEVICE_HEIGHT), self.screenSizeFor69Inch) ? 1 : 0;
+    }
+    return is69InchScreen > 0;
 }
 
 static NSInteger is67InchScreenAndiPhone14Later = -1;
@@ -548,6 +608,22 @@ static NSInteger is65InchScreen = -1;
         is65InchScreen = (DEVICE_WIDTH == self.screenSizeFor65Inch.width && DEVICE_HEIGHT == self.screenSizeFor65Inch.height && !QMUIHelper.is61InchScreen) ? 1 : 0;
     }
     return is65InchScreen > 0;
+}
+
+static NSInteger is63InchScreen = -1;
++ (BOOL)is63InchScreen {
+    if (is63InchScreen < 0) {
+        is63InchScreen = CGSizeEqualToSize(CGSizeMake(DEVICE_WIDTH, DEVICE_HEIGHT), self.screenSizeFor63Inch) ? 1 : 0;
+    }
+    return is63InchScreen > 0;
+}
+
+static NSInteger is61InchScreenAndiPhone14ProLater = -1;
++ (BOOL)is61InchScreenAndiPhone14ProLater {
+    if (is61InchScreenAndiPhone14ProLater < 0) {
+        is61InchScreenAndiPhone14ProLater = (DEVICE_WIDTH == self.screenSizeFor61InchAndiPhone14ProLater.width && DEVICE_HEIGHT == self.screenSizeFor61InchAndiPhone14ProLater.height) ? 1 : 0;
+    }
+    return is61InchScreenAndiPhone14ProLater > 0;
 }
 
 static NSInteger is61InchScreenAndiPhone12Later = -1;
@@ -616,6 +692,10 @@ static NSInteger is35InchScreen = -1;
     return is35InchScreen > 0;
 }
 
++ (CGSize)screenSizeFor69Inch {
+    return CGSizeMake(440, 956);
+}
+
 + (CGSize)screenSizeFor67InchAndiPhone14Later {
     return CGSizeMake(430, 932);// iPhone 14 Pro Max
 }
@@ -628,8 +708,16 @@ static NSInteger is35InchScreen = -1;
     return CGSizeMake(414, 896);
 }
 
++ (CGSize)screenSizeFor61InchAndiPhone14ProLater {
+    return CGSizeMake(393, 852);
+}
+
 + (CGSize)screenSizeFor61InchAndiPhone12Later {
     return CGSizeMake(390, 844);
+}
+
++ (CGSize)screenSizeFor63Inch {
+    return CGSizeMake(402, 874);
 }
 
 + (CGSize)screenSizeFor61Inch {
@@ -691,6 +779,63 @@ static CGFloat preferredLayoutWidth = -1;
     static NSDictionary<NSString *, NSDictionary<NSNumber *, NSValue *> *> *dict;
     if (!dict) {
         dict = @{
+            // iPhone 16 Pro
+            @"iPhone17,1": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(62, 0, 34, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 62, 21, 62)],
+            },
+            // iPhone 16 Pro Max
+            @"iPhone17,2": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(62, 0, 34, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 62, 21, 62)],
+            },
+            // iPhone 16
+            @"iPhone17,3": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(59, 0, 34, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 59, 21, 59)],
+            },
+            // iPhone 16 Plus
+            @"iPhone17,4": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(59, 0, 34, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 59, 21, 59)],
+            },
+            // iPhone 15
+            @"iPhone15,4": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(47, 0, 34, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 47, 21, 47)],
+            },
+            @"iPhone15,4-Zoom": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(48, 0, 28, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 48, 21, 48)],
+            },
+            // iPhone 15 Plus
+            @"iPhone15,5": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(47, 0, 34, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 47, 21, 47)],
+            },
+            @"iPhone15,5-Zoom": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(41, 0, 30, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 41, 21, 41)],
+            },
+            // iPhone 15 Pro
+            @"iPhone16,1": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(59, 0, 34, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 59, 21, 59)],
+            },
+            @"iPhone16,1-Zoom": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(48, 0, 28, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 48, 21, 48)],
+            },
+            // iPhone 15 Pro Max
+            @"iPhone16,2": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(59, 0, 34, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 59, 21, 59)],
+            },
+            @"iPhone16,2-Zoom": @{
+                @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(51, 0, 31, 0)],
+                @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 51, 21, 51)],
+            },
+            
             // iPhone 14
             @"iPhone14,7": @{
                 @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(47, 0, 34, 0)],
@@ -728,6 +873,7 @@ static CGFloat preferredLayoutWidth = -1;
                 @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(51, 0, 31, 0)],
                 @(UIInterfaceOrientationLandscapeLeft): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(0, 51, 21, 51)],
             },
+            
             // iPhone 13 mini
             @"iPhone14,4": @{
                 @(UIInterfaceOrientationPortrait): [NSValue valueWithUIEdgeInsets:UIEdgeInsetsMake(50, 0, 34, 0)],
@@ -827,7 +973,7 @@ static CGFloat preferredLayoutWidth = -1;
     
     NSString *deviceKey = [QMUIHelper deviceModel];
     if (!dict[deviceKey]) {
-        deviceKey = @"iPhone15,2";// 默认按最新的机型处理，因为新出的设备肯定更大概率与上一代设备相似
+        deviceKey = @"iPhone16,1";// 默认按最新的机型处理，因为新出的设备肯定更大概率与上一代设备相似
     }
     if ([QMUIHelper isZoomedMode]) {
         deviceKey = [NSString stringWithFormat:@"%@-Zoom", deviceKey];
@@ -887,6 +1033,20 @@ static NSInteger isHighPerformanceDevice = -1;
     return nativeScale > scale;
 }
 
++ (BOOL)isDynamicIslandDevice {
+    if (!IS_IPHONE) return NO;
+    if ([@[
+        @"iPhone 14 Pro",
+        @"iPhone 15",
+        @"iPhone 16",
+    ] qmui_firstMatchWithBlock:^BOOL(NSString *item) {
+        return [QMUIHelper.deviceName hasPrefix:item];
+    }]) {
+        return YES;
+    }
+    return NO;
+}
+
 - (void)handleAppSizeWillChange:(NSNotification *)notification {
     preferredLayoutWidth = -1;
 }
@@ -913,15 +1073,6 @@ static NSInteger isHighPerformanceDevice = -1;
     NSString *deviceModel = [QMUIHelper deviceModel];
     
     if (!UIApplication.sharedApplication.statusBarHidden) {
-#ifndef IOS16_SDK_ALLOWED
-        // Xcode 14 SDK 编译的才能在 iPhone 14 Pro 上读取到正确的值，否则会读到 iPhone 13 Pro 的值，过渡期间做个兼容
-        if (!IS_LANDSCAPE &&
-            ([deviceModel isEqualToString:@"iPhone15,2"] ||
-             [deviceModel isEqualToString:@"iPhone15,3"])
-            ) {
-            return 54;
-        }
-#endif
         return UIApplication.sharedApplication.statusBarFrame.size.height;
     }
     
@@ -938,14 +1089,46 @@ static NSInteger isHighPerformanceDevice = -1;
         // iPhone 13 Mini
         return 48;
     }
-    if ([deviceModel isEqualToString:@"iPhone15,2"] || [deviceModel isEqualToString:@"iPhone15,3"]) {
-        // iPhone 14 Pro & iPhone 14 Pro Max
+    if ([@[
+        @"iPhone 14 Pro",
+        @"iPhone 15",
+        @"iPhone 16",
+    ] qmui_firstMatchWithBlock:^BOOL(NSString *item) {
+        return [QMUIHelper.deviceName hasPrefix:item];
+    }]) {
         return 54;
     }
     if (IS_61INCH_SCREEN_AND_IPHONE12 || IS_67INCH_SCREEN) {
         return 47;
     }
     return (IS_54INCH_SCREEN && IOS_VERSION >= 15.0) ? 50 : 44;
+}
+
++ (CGFloat)navigationBarMaxYConstant {
+    CGFloat result = QMUIHelper.statusBarHeightConstant;
+    if (IS_IPAD) {
+        result += 50;
+    } else if (IS_LANDSCAPE) {
+        result += PreferredValueForVisualDevice(44, 32);
+    } else {
+        result += 44;
+        if ([@[
+            @"iPhone 16 Pro",
+        ] qmui_firstMatchWithBlock:^BOOL(NSString *item) {
+            return [QMUIHelper.deviceName hasPrefix:item];
+        }]) {
+            result += 2 + PixelOne;// 56.333
+        } else if ([@[
+            @"iPhone 14 Pro",
+            @"iPhone 15",
+            @"iPhone 16",
+        ] qmui_firstMatchWithBlock:^BOOL(NSString *item) {
+            return [QMUIHelper.deviceName hasPrefix:item];
+        }]) {
+            result -= PixelOne;// 53.667
+        }
+    }
+    return result;
 }
 
 @end
@@ -1022,6 +1205,22 @@ static NSInteger isHighPerformanceDevice = -1;
 
 + (BOOL)isCurrentSystemLowerThanVersion:(NSString *)targetVersion {
     return [QMUIHelper compareSystemVersion:[[UIDevice currentDevice] systemVersion] toVersion:targetVersion] == NSOrderedAscending;
+}
+
+@end
+
+@implementation QMUIHelper (Text)
+
++ (CGFloat)baselineOffsetWhenVerticalAlignCenterInHeight:(CGFloat)height withFont:(UIFont *)font {
+    CGFloat capHeightCenter = height + font.descender - font.capHeight / 2;
+    CGFloat verticalCenter = height / 2;// 以这一点为中心点
+    CGFloat baselineOffset = capHeightCenter - verticalCenter;
+    // ≤ iOS 16.3.1 的设备上，1pt baseline 会让文本向上移动 2pt，≥ iOS 16.4 均为 1:1 移动。
+    if (@available(iOS 16.4, *)) {
+    } else {
+        baselineOffset = baselineOffset / 2;
+    }
+    return baselineOffset;
 }
 
 @end
